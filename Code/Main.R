@@ -25,10 +25,20 @@ exhaust <- build_MOTTE_forest(
   treat = sim.dat$train$treat,
   y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e)
 
+
+# TODO: CONTINUE HERE
 print("Finish exhaustive tree")
 
+forest <- buildForest(
+  x.b =X.train.base , x.e = X.train.end,
+  treat = Treat.train,
+  y.b = Y.train.base, y.e = Y.train.end,
+  nsplits=1,ntree=200, nodesize=2)
+
+print("Finish forest tree")
+
 # Training Qian and Susam Method
-source("susan_method.R")
+source("Code/susan_method.R")
 
 # Training Loh's method
 source("Loh_method.R")
@@ -39,36 +49,57 @@ print("Finish fitting model")
 #
 
 # each column is a weight vector
-weight <- rep(0.3,3)
-rweights <- matrix(runif(30,0,1),nrow=3,ncol=10)
-weights <- cbind(weight,rweights)
+weight <- rep(0.3,6)
+
+true.recom <- ifelse(Y.test.case.end%*%weight>Y.test.control.end%*%weight,1,0)
+exhaust.recom <- recommendResult(exhaust, X.test.base, weight)
+forest.recom <- recommendResult(forest, X.test.base, weight)
+susan.recom <- ifelse(susan.treat.pred[,,1]%*%weight > susan.untreat.pred[,,1]%*%weight,1,0)
+loh.recom <- ifelse(as.matrix(test.loh.treat.node.res[,5:10])%*%weight>as.matrix(test.loh.untreat.node.res[,5:10])%*%weight,1,0)
+
+# Classification error
+exhaust.err.tab <- table(exhaust.recom,true.recom)
+exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
+forest.err.tab <- table(forest.recom,true.recom)
+forest.err <- sum(forest.recom!=true.recom)/n.test
+susan.err.tab <- table(susan.recom,true.recom)
+susan.err <- sum(susan.recom!=true.recom)/n.test
+loh.err.tab <- table(loh.recom, true.recom)
+loh.err <- sum(loh.recom!=true.recom)/n.test
+
+eweight.err <- #t(
+  c(exhaust.err, forest.err, susan.err, loh.err)
+#)
+
+weight <- matrix(runif(n.test*q,-1,1),nrow=n.test)
+
 
 # Each column represents the classification error of each methods corresponding to each weight
-err.tab <- apply(weights, 2, FUN=function(x){
-  true.recom <- ifelse(Y.test.case.end%*%x>Y.test.control.end%*%x,1,0)
-  exhaust.recom <- recommendResult(exhaust, X.test.base, x)
-  susan.recom <- ifelse(susan.treat.pred[,,1]%*%x > susan.untreat.pred[,,1]%*%x,1,0)
-  loh.recom <- ifelse(as.matrix(test.loh.treat.node.res[,5:7])%*%x>as.matrix(test.loh.untreat.node.res[,5:7])%*%x,1,0)
+
+  true.recom <- ifelse(diag(tcrossprod(Y.test.case.end,weight))>diag(tcrossprod(Y.test.control.end,weight)),1,0)
+  exhaust.recom <- recommendResult(exhaust, X.test.base, weight)
+  forest.recom <- recommendResult(forest, X.test.base, weight)
+  susan.recom <- ifelse(diag(tcrossprod(susan.treat.pred[,,1],weight)) > diag(tcrossprod(susan.untreat.pred[,,1],weight)),1,0)
+  loh.recom <- ifelse(diag(tcrossprod(as.matrix(test.loh.treat.node.res[,5:10]),weight))>diag(tcrossprod(as.matrix(test.loh.untreat.node.res[,5:10]),weight)),1,0)
   
   # Classification error
   exhaust.err.tab <- table(exhaust.recom,true.recom)
   exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
+  forest.err.tab <- table(forest.recom,true.recom)
+  forest.err <- sum(forest.recom!=true.recom)/n.test
   susan.err.tab <- table(susan.recom,true.recom)
   susan.err <- sum(susan.recom!=true.recom)/n.test
   loh.err.tab <- table(loh.recom, true.recom)
   loh.err <- sum(loh.recom!=true.recom)/n.test
   
   
-  write.out <- #t(
-    c(exhaust.err, susan.err,loh.err)
+  rweight.err <- #t(
+    c(exhaust.err, forest.err, susan.err, loh.err)
     #)
   
-  return(write.out)
-})
+#  return(write.out)
+# })
 
-equal.weight.err <- err.tab[,1]
-ave.rweight.err <- rowMeans(err.tab[,-1])
-
-err.output <-c(equal.weight.err, ave.rweight.err)
+err.output <-c(eweight.err, rweight.err)
 
 write.table(t(err.output), file="Result/classError.csv",append=TRUE,col.names=F)
