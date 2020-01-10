@@ -15,14 +15,25 @@ pi <- 0.5
 # Treatment effect function
 treat.effect <- function(x.base,treat,i,j)
 {
+  if(i == 1 ) y <- x.base[,c(i,j)]%*%c(-0.50,-0.265)
+  else if(i ==2) y <- x.base[,c(i,j)]%*%c(-0.16,-0.05)
+  else y <- x.base[,c(i,j)]%*%c(-0.38,0.8525)
+  
   # Create treatment effective population
-  treat1.pop <- x.base[,i]+x.base[,j]>0
+  # Extremely old version
+  #treat1.pop <- x.base[,i]+x.base[,j]>0
+  # V3.0 stable version
+  treat1.pop <- rep(TRUE,nrow(x.base))
   treat0.pop <- rep(TRUE,nrow(x.base))
 
   # Create treatment effective magnitude
   no.treat.effect <- 0
-  treat1.effect <- ifelse(treat1.pop,6,no.treat.effect)
-  treat0.effect <- ifelse(treat0.pop,3,no.treat.effect)
+  # Extremely old version
+  #  treat1.effect <- ifelse(treat1.pop,6,no.treat.effect)
+  #  treat0.effect <- ifelse(treat0.pop,3,no.treat.effect)
+  # V3.0 stable version
+  treat1.effect <- ifelse(treat1.pop,y,no.treat.effect)
+  treat0.effect <- ifelse(treat0.pop,-y,no.treat.effect)
 
   return(ifelse(treat,treat1.effect,treat0.effect))
 }
@@ -60,12 +71,12 @@ X.train.base <- MASS::mvrnorm(n.train,rep(0,p),diag(p))
 
 X.train.end <- X.train.base
 X.train.end[,5] <- X.train.end[,5] + treat.effect(X.train.base,Treat.train,1,3)
-X.train.end[,6] <- X.train.end[,6] + treat.effect(X.train.base,Treat.train,1,3)
-X.train.end[,7]<- X.train.end[,7] + treat.effect(X.train.base,Treat.train,1,3)
-X.train.end <- X.train.end + mvrnorm(n.train, rep(0,p), 0.01*diag(p))
+X.train.end[,6] <- X.train.end[,6] + treat.effect(X.train.base,Treat.train,2,4)
+X.train.end[,7]<- X.train.end[,7] + treat.effect(X.train.base,Treat.train,3,5)
+X.train.end <- X.train.end + mvrnorm(n.train, rep(0,p), 0.1*diag(p))   
 
-Y.train.base <- (X.train.base)%*%Z + mvrnorm(n.train, rep(0,q), 0.01*diag(q))
-Y.train.end <- (X.train.end)%*%Z + mvrnorm(n.train, rep(0,q), 0.01*diag(q))
+Y.train.base <- (X.train.base)%*%Z + mvrnorm(n.train, rep(0,q), 0.1*diag(q))
+Y.train.end <- (X.train.end)%*%Z + mvrnorm(n.train, rep(0,q), 0.1*diag(q))
 
 
 ####################################
@@ -79,11 +90,11 @@ X.test.base  <- mvrnorm(n.test,rep(0,p),diag(p))
 X.test.case.end <-  X.test.base
 X.test.control.end <- X.test.base
 X.test.case.end[,5] <- X.test.case.end[,5] + treat.effect(X.test.base,rep(1,n.test),1,3)
-X.test.case.end[,6] <- X.test.case.end[,6] + treat.effect(X.test.base,rep(1,n.test),1,3)
-X.test.case.end[,7] <- X.test.case.end[,7] + treat.effect(X.test.base,rep(1,n.test),1,3)
+X.test.case.end[,6] <- X.test.case.end[,6] + treat.effect(X.test.base,rep(1,n.test),2,4)
+X.test.case.end[,7] <- X.test.case.end[,7] + treat.effect(X.test.base,rep(1,n.test),3,5)
 X.test.control.end[,5] <- X.test.control.end[,5] + treat.effect(X.test.base,rep(0,n.test),1,3)
-X.test.control.end[,6] <- X.test.control.end[,6] + treat.effect(X.test.base,rep(0,n.test),1,3)
-X.test.control.end[,7] <- X.test.control.end[,7] + treat.effect(X.test.base,rep(0,n.test),1,3)
+X.test.control.end[,6] <- X.test.control.end[,6] + treat.effect(X.test.base,rep(0,n.test),2,4)
+X.test.control.end[,7] <- X.test.control.end[,7] + treat.effect(X.test.base,rep(0,n.test),3,5)
 X.test.case.end <- X.test.case.end
 X.test.control.end <- X.test.control.end
 # With/Without treatment Y.base

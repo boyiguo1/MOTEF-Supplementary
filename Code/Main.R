@@ -16,6 +16,17 @@ library(MOTTE.RF)
 #Simulate data
 sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, pi=pi)
 
+# Generating Rdata file for GUIDE
+# train.lab variable in this file is for the prediction purpose for Loh's method
+train.lab <- c(rep(1,n.train),rep(0, 2*n.test))
+Xs <- rbind(X.train.base, X.test.base, X.test.base)
+Ys <- rbind(Y.train.end, matrix(NA,nrow=2*n.test,ncol=ncol(Y.train.end)))
+Treat.all <- c(Treat.train,rep(1,n.test),rep(0,n.test))
+all.data <- cbind(train.lab, Treat.all, Xs, Ys)
+colnames(all.data) <- c("Train","Treated",paste0("X",1:p),paste0("Y",1:q))
+# Save data for Loh's method
+write.csv(all.data,paste0(args[1],"input_data.rdata"),row.names=F)
+
 # str(tmp)
 
 # Training models
@@ -26,14 +37,14 @@ exhaust <- build_MOTTE_forest(
   y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e)
 
 
-# TODO: CONTINUE HERE
-print("Finish exhaustive tree")
 
-forest <- buildForest(
-  x.b =X.train.base , x.e = X.train.end,
-  treat = Treat.train,
-  y.b = Y.train.base, y.e = Y.train.end,
-  nsplits=1,ntree=200, nodesize=2)
+print("Finish exhaustive tree")
+# TODO: ERROR here DeBug
+forest <- build_MOTTE_forest(
+  x.b =sim.dat$train$x.b , x.e = sim.dat$train$x.e,
+  treat = sim.dat$train$treat,
+  y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e,
+  nsplits=2,ntree=200, nodesize=2)
 
 print("Finish forest tree")
 
@@ -41,7 +52,7 @@ print("Finish forest tree")
 source("Code/susan_method.R")
 
 # Training Loh's method
-source("Loh_method.R")
+source("Code/Loh_method.R")
 
 print("Finish fitting model")
 
