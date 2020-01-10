@@ -1,17 +1,29 @@
 args = commandArgs(trailingOnly=TRUE)
 
+n.train <-  500
+n.test <- 200
+p <- 10
+q <- 3
+# pi is the ratio between treatment groups
+pi <- 0.5
+
 # source("Simulation.R")        # Simulate training and testing datasets
 # source("buildForest.R")
 # source("predict.R")
 
 
 library(MOTTE.RF)
+#Simulate data
+sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, pi=pi)
+
+# str(tmp)
+
 # Training models
 
-exhaust <- buildForest(
-  x.b =X.train.base , x.e = X.train.end,
-  treat = Treat.train,
-  y.b = Y.train.base, y.e = Y.train.end)
+exhaust <- build_MOTTE_forest(
+  x.b =sim.dat$train$x.b , x.e = sim.dat$train$x.e,
+  treat = sim.dat$train$treat,
+  y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e)
 
 print("Finish exhaustive tree")
 
