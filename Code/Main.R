@@ -1,9 +1,11 @@
 args = commandArgs(trailingOnly=TRUE)
 
-source("Simulation.R")        # Simulate training and testing datasets
-source("buildForest.R")
-source("predict.R")
+# source("Simulation.R")        # Simulate training and testing datasets
+# source("buildForest.R")
+# source("predict.R")
 
+
+library(MOTTE.RF)
 # Training models
 
 exhaust <- buildForest(
