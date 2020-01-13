@@ -1,0 +1,40 @@
+---
+title: "Simulation Plan"
+header-includes:
+   - \usepackage{bbm}
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+* Number of Covariates: 2 settings: p=10/20
+* Number of Responses: 2 settings: q = 3/6
+* Sample Size for Training Data: $N_{train}$ = 400/800
+* Sample Size for Testing Data: $N_{test}$ = 1000
+* Number of Iteration: 1000
+* Covariance Matrix for Covariates: $\Sigma = \mathbb{I}/AR(0.8)$
+* Variations:
+  + pre-treatment covariates $X^b$: Doesn't matter that much? TODO: Linking back with CCA
+  + Post-treatment covariates $X^e$: matters
+  + Linking error, i.e. x -> y: matters
+* Treatment effect function: TODO: selection of the following functions considering the CCA setting
+  + one-to-one:
+  + Multiple-to-one:
+  + Multiple-to-multiple:
+  + function :
+    - linear
+    - non-linear
+* Link function:
+  + Linear: Linear Design Matrix
+  + Non-Linear: Element wise square design matrix?
+
+    
+* Metrics Evaluated
+  + Treatment Effect (\& its variance): TODO: come up with a measure of uncertainty, variance is the best bet
+  \[ \mathbb{E}(Y^e|T=1) - \mathbb{E}(Y^e|T=-1)\]
+  + Treatment Recommendation: The reason that I would like to see something about it is because, at the end, we would like to apply this in a real life scenario where the recommendation are given.
+  \[\mathbb{1}(w\mathbb{E}(Y^e|T=1) - w\mathbb{E}(Y^e|T=-1))\]
