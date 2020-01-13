@@ -1,4 +1,4 @@
-args = commandArgs(trailingOnly=TRUE)
+#args = commandArgs(trailingOnly=TRUE)
 
 n.train <-  500
 n.test <- 200
@@ -14,9 +14,11 @@ pi <- 0.5
 
 library(MOTTE.RF)
 #Simulate data
+set.seed(1)
 sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, pi=pi)
 
 # Generating Rdata file for GUIDE
+# TODO: Need to work on this section
 # train.lab variable in this file is for the prediction purpose for Loh's method
 train.lab <- c(rep(1,n.train),rep(0, 2*n.test))
 Xs <- rbind(X.train.base, X.test.base, X.test.base)
@@ -44,15 +46,15 @@ forest <- build_MOTTE_forest(
   x.b =sim.dat$train$x.b , x.e = sim.dat$train$x.e,
   treat = sim.dat$train$treat,
   y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e,
-  nsplits=2,ntree=200, nodesize=2)
+  nsplits=2,ntree=4, nodesize=2)
 
 print("Finish forest tree")
 
 # Training Qian and Susam Method
-source("Code/susan_method.R")
+source("../MOTTE.RF.Simulation/Code/susan_method.R")
 
 # Training Loh's method
-source("Code/Loh_method.R")
+source("../MOTTE.RF.SimulationCode/Loh_method.R")
 
 print("Finish fitting model")
 
@@ -92,7 +94,7 @@ weight <- matrix(runif(n.test*q,-1,1),nrow=n.test)
   forest.recom <- recommendResult(forest, X.test.base, weight)
   susan.recom <- ifelse(diag(tcrossprod(susan.treat.pred[,,1],weight)) > diag(tcrossprod(susan.untreat.pred[,,1],weight)),1,0)
   loh.recom <- ifelse(diag(tcrossprod(as.matrix(test.loh.treat.node.res[,5:10]),weight))>diag(tcrossprod(as.matrix(test.loh.untreat.node.res[,5:10]),weight)),1,0)
-  
+
   # Classification error
   exhaust.err.tab <- table(exhaust.recom,true.recom)
   exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
@@ -102,12 +104,12 @@ weight <- matrix(runif(n.test*q,-1,1),nrow=n.test)
   susan.err <- sum(susan.recom!=true.recom)/n.test
   loh.err.tab <- table(loh.recom, true.recom)
   loh.err <- sum(loh.recom!=true.recom)/n.test
-  
-  
+
+
   rweight.err <- #t(
     c(exhaust.err, forest.err, susan.err, loh.err)
     #)
-  
+
 #  return(write.out)
 # })
 
