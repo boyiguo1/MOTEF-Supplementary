@@ -8,30 +8,45 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# Objective
+We aim to use simulation to exame xxx dimensions of the method: Robust ness against the linear assumption of g (Linear assumption is needed to associates $\Delta X$ and $\Delta Y$) and f (CCA estimates the linear relationship between the two random vectors ($X$ and $\Delta X$, or $X$ and $\Delta Y$)) respectively; correlation structure of the Xs and implicitly the Ys; various magnitude of noise.
 
-## R Markdown
 
-* Number of Covariates: 2 settings: p=10/20
-* Number of Responses: 2 settings: q = 3/6
-* Sample Size for Training Data: $N_{train}$ = 400/800
+# Settings
+
+* Number of Covariates: 2 settings: p=10 or 20
+* Number of Responses: 2 settings: q = 3 or 6
+* Sample Size for Training Data: $N_{train}$ = 400 or 800
 * Sample Size for Testing Data: $N_{test}$ = 1000
 * Number of Iteration: 1000
-* Covariance Matrix for Covariates: $\Sigma = \mathbb{I}/AR(0.8)$
-* Variations:
-  + pre-treatment covariates $X^b$: Doesn't matter that much? TODO: Linking back with CCA
-  + Post-treatment covariates $X^e$: matters
-  + Linking error, i.e. x -> y: matters
-* Treatment effect function: TODO: selection of the following functions considering the CCA setting
-  + one-to-one:
-  + Multiple-to-one:
-  + Multiple-to-multiple:
-  + function :
-    - linear
-    - non-linear
-* Link function:
-  + Linear: Linear Design Matrix
-  + Non-Linear: Element wise square design matrix?
+* Covariance Matrix for Covariates: $\Sigma = \mathbb{I}$ or $AR(0.8)$
+* Simulation
+\begin{align*}
+X^b & \sim MVN(0, \Sigma)\\
+X^e & \sim MVN(X^b + I(T=1)f_{T=1}(X^b) + I(T=-1)f_{T=-1}(X^b), c_x\mathbb{I})\\
+Y & \sim MVN(g(X), c_y\mathbb{I})
+\end{align*}
 
+* Variation: TODO: come up with different degrees of error magnitude
+  + pre-treatment covariates $X^b$: Doesn't matter that much
+  + Post-treatment covariates $X^e$ error term: matters
+  + Linking error, i.e. x -> y: matters
+* Treatment effect function: 
+\[
+  \mathbb{E}(X^e) = X^b + I(T=1)f_{T=1}(X^b) + I(T=-1)f_{T=-1}(X^b),
+\]
+where we need to set up for $f_{T=1}$ and $f_{T=-1}$. Starting with the most simple case, we can have $f_{T=-1} = -f_{T=1}$. $f_{T=1}$ function can be one of the following options
+  + Linear: $f(X) = X\beta$
+  + Polynomial: $f(x) = (X\circ X) \times \beta$ where $A \circ B$ is the hadamard product
+  
+  Depending on the choice of $\beta$, we can control if we want to introduce correlation into $X^e$
+
+
+
+* Link function:
+  + Linear: \[\mathbb{E}(Y) = g(X) =  X \times Z\]
+  + Non-Linear: \[\mathbb{E}(Y) = g(X) = (X \circ X) \times Z\]
+  Depending on the choice of $Z$, we can control if we want to introduce correlation into $y^e$
     
 * Metrics Evaluated
   + Treatment Effect (\& its variance): TODO: come up with a measure of uncertainty, variance is the best bet
