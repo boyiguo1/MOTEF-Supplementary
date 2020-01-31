@@ -7,15 +7,80 @@ q <- 3
 # pi is the ratio between treatment groups
 pi <- 0.5
 
-# source("Simulation.R")        # Simulate training and testing datasets
-# source("buildForest.R")
-# source("predict.R")
 
 
 library(MOTTE.RF)
+library(glmnet)
+
 #Simulate data
+# TODO: change the set up in the future
 set.seed(1)
-sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, pi=pi)
+B <- create.B(10)
+Z <- create.Z(10, 3)
+sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, ratio=pi,
+                          B = B, Z = Z)
+# Organize data by standardize
+train.dat <- sim.dat$train
+
+x.b <- scale(train.dat$x.b, center = FALSE, scale = TRUE)
+x.e <- scale(train.dat$x.e, center = FALSE, scale = TRUE)
+y.b <- scale(train.dat$y.b, center = FALSE, scale = TRUE)
+y.e <- scale(train.dat$y.e, center = FALSE, scale = TRUE)
+treat <- train.dat$trt
+
+
+# scaling test.dat
+test.dat <- sim.dat$test
+test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+
+test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+
+true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
+    scale(test.dat$y.e.control, center = F, scale = attr(y.e, "scale"))
+
+# Fit Extreme RF
+extm.mdl<- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+                              nsplits = 1)
+# TODO: write the predict function
+
+# Fit RF based on \mu X.b
+RF.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+                             nsplits = 50)
+
+# Fit Tree based on \mu X.b
+tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+                              nsplits = NULL)
+
+tmp <- traverseForest(tree.mdl, test.x.b[1,,drop=F])
+
+# Constructing data with interaction term
+dat <- data.frame( x = x.b, Treat = treat)
+f <- as.formula(~(.-Treat)*Treat)
+x <- model.matrix(f, dat)
+
+cv.res <- cv.glmnet(x, y.e,family="mgaussian", standardize=T, intercept=T)
+glm.res <- glmnet(x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
+
+# TODO change the name
+test.treat <- data.frame(x=test.x.b, Treat=rep(levels(treat)[1],n.test))
+test.untreat <- data.frame(x=test.x.b, Treat=rep(levels(treat)[2],n.test))
+
+levels(test.treat$Treat) <- levels(test.untreat$Treat) <- levels(treat)
+
+x.test.treat <- model.matrix(f, test.treat)
+x.test.untreat <- model.matrix(f, test.untreat)
+susan.treat.pred <- predict(glm.res, x.test.treat)
+susan.untreat.pred <- predict(glm.res, x.test.untreat)
+
+susan.treat.diff <- susan.treat.pred - susan.unstreat.pred
+
+
+
+
+
+
+
 
 # Generating Rdata file for GUIDE
 # TODO: Need to work on this section
