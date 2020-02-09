@@ -42,17 +42,21 @@ true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")
 # Fit Extreme RF
 extm.mdl<- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
                               nsplits = 1)
-# TODO: write the predict function
+extm.mdl.trt.diff <- calcTrtDiff(extm.mdl, test.x.b)
 
 # Fit RF based on \mu X.b
 RF.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
                              nsplits = 50)
+RF.mdl.trt.diff <- calcTrtDiff(RF.mdl, test.x.b)
 
 # Fit Tree based on \mu X.b
 tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
                               nsplits = NULL)
+tree.mdl.trt.diff <- calcTrtDiff(tree.mdl, test.x.b)
 
-tmp <- traverseForest(tree.mdl, test.x.b[1,,drop=F])
+
+calcTrtDiff.single(tree.mdl, test.x.b[1,,drop=F])
+
 
 # Constructing data with interaction term
 dat <- data.frame( x = x.b, Treat = treat)
@@ -63,17 +67,18 @@ cv.res <- cv.glmnet(x, y.e,family="mgaussian", standardize=T, intercept=T)
 glm.res <- glmnet(x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
 
 # TODO change the name
-test.treat <- data.frame(x=test.x.b, Treat=rep(levels(treat)[1],n.test))
-test.untreat <- data.frame(x=test.x.b, Treat=rep(levels(treat)[2],n.test))
-
-levels(test.treat$Treat) <- levels(test.untreat$Treat) <- levels(treat)
+test.treat <- data.frame(x=test.x.b,
+                         Treat=rep(levels(treat)[1],n.test) %>% factor(levels = levels(treat)))
+test.untreat <- data.frame(x=test.x.b,
+                           Treat=rep(levels(treat)[2],n.test) %>% factor(levels = levels(treat)))
 
 x.test.treat <- model.matrix(f, test.treat)
 x.test.untreat <- model.matrix(f, test.untreat)
+# TODO: Figure out what is s0 why the outcome format is an array
 susan.treat.pred <- predict(glm.res, x.test.treat)
 susan.untreat.pred <- predict(glm.res, x.test.untreat)
 
-susan.treat.diff <- susan.treat.pred - susan.unstreat.pred
+susan.treat.diff <- (susan.treat.pred - susan.untreat.pred) %>% data.frame
 
 
 
@@ -94,34 +99,6 @@ colnames(all.data) <- c("Train","Treated",paste0("X",1:p),paste0("Y",1:q))
 # Save data for Loh's method
 write.csv(all.data,paste0(args[1],"input_data.rdata"),row.names=F)
 
-# str(tmp)
-
-# Training models
-
-exhaust <- build_MOTTE_forest(
-  x.b =sim.dat$train$x.b , x.e = sim.dat$train$x.e,
-  treat = sim.dat$train$treat,
-  y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e)
-
-
-
-print("Finish exhaustive tree")
-# TODO: ERROR here DeBug
-forest <- build_MOTTE_forest(
-  x.b =sim.dat$train$x.b , x.e = sim.dat$train$x.e,
-  treat = sim.dat$train$treat,
-  y.b = sim.dat$train$y.b, y.e = sim.dat$train$y.e,
-  nsplits=2,ntree=4, nodesize=2)
-
-print("Finish forest tree")
-
-# Training Qian and Susam Method
-source("../MOTTE.RF.Simulation/Code/susan_method.R")
-
-# Training Loh's method
-source("../MOTTE.RF.SimulationCode/Loh_method.R")
-
-print("Finish fitting model")
 
 ### Classification error
 #
