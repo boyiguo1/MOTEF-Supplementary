@@ -33,8 +33,8 @@ treat <- train.dat$trt
 test.dat <- sim.dat$test
 test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
 
-test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
-test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+# test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+# test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
 
 true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
     scale(test.dat$y.e.control, center = F, scale = attr(y.e, "scale"))
@@ -91,10 +91,14 @@ susan.treat.diff <- (susan.treat.pred - susan.untreat.pred) %>% data.frame
 # TODO: Need to work on this section
 # train.lab variable in this file is for the prediction purpose for Loh's method
 train.lab <- c(rep(1,n.train),rep(0, 2*n.test))
-Xs <- rbind(X.train.base, X.test.base, X.test.base)
-Ys <- rbind(Y.train.end, matrix(NA,nrow=2*n.test,ncol=ncol(Y.train.end)))
-Treat.all <- c(Treat.train,rep(1,n.test),rep(0,n.test))
-all.data <- cbind(train.lab, Treat.all, Xs, Ys)
+Xs <- rbind(x.b, test.x.b, test.x.b)
+Ys <- rbind(y.e, matrix(NA,nrow=2*n.test,ncol=ncol(y.e)))
+Treat.all <- c(treat %>% as.numeric,
+               rep(1, n.test), rep(2,n.test)) %>%
+  factor(levels = 1:2, labels=levels(treat))
+
+
+all.data <- data.frame(train.lab, Treat.all, Xs, Ys)
 colnames(all.data) <- c("Train","Treated",paste0("X",1:p),paste0("Y",1:q))
 # Save data for Loh's method
 write.csv(all.data,paste0(args[1],"input_data.rdata"),row.names=F)
