@@ -11,6 +11,7 @@ pi <- 0.5
 
 library(MOTTE.RF)
 library(glmnet)
+library(tidyverse)
 
 #Simulate data
 # TODO: change the set up in the future
@@ -55,7 +56,7 @@ tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
 tree.mdl.trt.diff <- calcTrtDiff(tree.mdl, test.x.b)
 
 
-calcTrtDiff.single(tree.mdl, test.x.b[1,,drop=F])
+#calcTrtDiff.single(tree.mdl, test.x.b[1,,drop=F])
 
 
 # Constructing data with interaction term
