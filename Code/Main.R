@@ -30,8 +30,8 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   B <- create.B(10)
   Z <- create.Z(10, 3)
   sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, ratio=pi,
-                            trt.f = trt.f,
-                            link.f = link.f,
+                            trt.f = c("Linear", "Polynomial")[trt.f],
+                            link.f = c("Linear", "Polynomial")[link.f],
                             cov.mat = sigma(p),
                             B = B, Z = Z)
   # Organize data by standardize
