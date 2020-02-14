@@ -1,92 +1,92 @@
-#args = commandArgs(trailingOnly=TRUE)
+# Receiving Simulation Setting Via Batch Arguments
+args=(commandArgs(TRUE))
 
-n.train <-  500
-n.test <- 200
-p <- 10
-q <- 3
-# pi is the ratio between treatment groups
-pi <- 0.5
+if(length(args)==0){
+  print("No arguments supplied.")
+}else{
+  for(i in 1:length(args)){
+    eval(parse(text=args[[i]]))
+  }
+}
 
-
-
+# Required Library
 library(MOTTE.RF)
 library(glmnet)
 library(tidyverse)
 
-#Simulate data
-# TODO: change the set up in the future
-set.seed(1)
-B <- create.B(10)
-Z <- create.Z(10, 3)
-sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, ratio=pi,
-                          B = B, Z = Z)
-# Organize data by standardize
-train.dat <- sim.dat$train
+# pi is the ratio between treatment groups
+n_it <- 1000
+pi <- 0.5
 
-x.b <- scale(train.dat$x.b, center = FALSE, scale = TRUE)
-x.e <- scale(train.dat$x.e, center = FALSE, scale = TRUE)
-y.b <- scale(train.dat$y.b, center = FALSE, scale = TRUE)
-y.e <- scale(train.dat$y.e, center = FALSE, scale = TRUE)
-treat <- train.dat$trt
-
-
-# scaling test.dat
-test.dat <- sim.dat$test
-test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
-
-test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
-test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
-
-true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
+sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
+  set.seed(x)
+  B <- create.B(10)
+  Z <- create.Z(10, 3)
+  sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, ratio=pi,
+                            B = B, Z = Z)
+  # Organize data by standardize
+  train.dat <- sim.dat$train
+  
+  x.b <- scale(train.dat$x.b, center = FALSE, scale = TRUE)
+  x.e <- scale(train.dat$x.e, center = FALSE, scale = TRUE)
+  y.b <- scale(train.dat$y.b, center = FALSE, scale = TRUE)
+  y.e <- scale(train.dat$y.e, center = FALSE, scale = TRUE)
+  treat <- train.dat$trt
+  
+  
+  # scaling test.dat
+  test.dat <- sim.dat$test
+  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+  
+  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+  
+  true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
     scale(test.dat$y.e.control, center = F, scale = attr(y.e, "scale"))
-
-# Fit Extreme RF
-extm.mdl<- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
-                              nsplits = 1)
-extm.mdl.trt.diff <- calcTrtDiff(extm.mdl, test.x.b)
-
-# Fit RF based on \mu X.b
-RF.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
-                             nsplits = 50)
-RF.mdl.trt.diff <- calcTrtDiff(RF.mdl, test.x.b)
-
-# Fit Tree based on \mu X.b
-tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
-                              nsplits = NULL)
-tree.mdl.trt.diff <- calcTrtDiff(tree.mdl, test.x.b)
-
-
-#calcTrtDiff.single(tree.mdl, test.x.b[1,,drop=F])
-
-
-# Constructing data with interaction term
-dat <- data.frame( x = x.b, Treat = treat)
-f <- as.formula(~(.-Treat)*Treat)
-x <- model.matrix(f, dat)
-
-cv.res <- cv.glmnet(x, y.e,family="mgaussian", standardize=T, intercept=T)
-glm.res <- glmnet(x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
-
-# TODO change the name
-test.treat <- data.frame(x=test.x.b,
-                         Treat=rep(levels(treat)[1],n.test) %>% factor(levels = levels(treat)))
-test.untreat <- data.frame(x=test.x.b,
-                           Treat=rep(levels(treat)[2],n.test) %>% factor(levels = levels(treat)))
-
-x.test.treat <- model.matrix(f, test.treat)
-x.test.untreat <- model.matrix(f, test.untreat)
-# TODO: Figure out what is s0 why the outcome format is an array
-susan.treat.pred <- predict(glm.res, x.test.treat)
-susan.untreat.pred <- predict(glm.res, x.test.untreat)
-
-susan.treat.diff <- (susan.treat.pred - susan.untreat.pred) %>% data.frame
-
-
-
-
-
-
-
+  
+  # Fit Extreme RF
+  extm.mdl<- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+                                nsplits = 1)
+  extm.mdl.trt.diff <- calcTrtDiff(extm.mdl, test.x.b)
+  
+  # Fit RF based on \mu X.b
+  RF.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+                               nsplits = 50)
+  RF.mdl.trt.diff <- calcTrtDiff(RF.mdl, test.x.b)
+  
+  # Fit Tree based on \mu X.b
+  tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+                                 nsplits = NULL)
+  tree.mdl.trt.diff <- calcTrtDiff(tree.mdl, test.x.b)
+  
+  
+  #calcTrtDiff.single(tree.mdl, test.x.b[1,,drop=F])
+  
+  
+  # Constructing data with interaction term
+  dat <- data.frame( x = x.b, Treat = treat)
+  f <- as.formula(~(.-Treat)*Treat)
+  x <- model.matrix(f, dat)
+  
+  cv.res <- cv.glmnet(x, y.e,family="mgaussian", standardize=T, intercept=T)
+  glm.res <- glmnet(x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
+  
+  # TODO change the name
+  test.treat <- data.frame(x=test.x.b,
+                           Treat=rep(levels(treat)[1],n.test) %>% factor(levels = levels(treat)))
+  test.untreat <- data.frame(x=test.x.b,
+                             Treat=rep(levels(treat)[2],n.test) %>% factor(levels = levels(treat)))
+  
+  x.test.treat <- model.matrix(f, test.treat)
+  x.test.untreat <- model.matrix(f, test.untreat)
+  # TODO: Figure out what is s0 why the outcome format is an array
+  susan.treat.pred <- predict(glm.res, x.test.treat)
+  susan.untreat.pred <- predict(glm.res, x.test.untreat)
+  
+  susan.treat.diff <- (susan.treat.pred - susan.untreat.pred) %>% data.frame
+  
+  
+})
 
 # Generating Rdata file for GUIDE
 # TODO: Need to work on this section
@@ -157,5 +157,3 @@ weight <- matrix(runif(n.test*q,-1,1),nrow=n.test)
 # })
 
 err.output <-c(eweight.err, rweight.err)
-
-write.table(t(err.output), file="Result/classError.csv",append=TRUE,col.names=F)
