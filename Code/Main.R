@@ -26,6 +26,9 @@ n_it <- 1000
 pi <- 0.5
 
 sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
+  
+  paste0("This is Run", x, "\n") %>% cat
+  
   set.seed(x)
   B <- create.B(10)
   Z <- create.Z(10, 3)
