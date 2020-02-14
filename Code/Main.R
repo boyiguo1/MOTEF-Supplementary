@@ -1,6 +1,12 @@
 # Receiving Simulation Setting Via Batch Arguments
 args=(commandArgs(TRUE))
 
+ind <- diag
+AR <- function(x){
+  t <- 1:x
+  return(0.8^abs(outer(t,t, "-")))
+}
+
 if(length(args)==0){
   print("No arguments supplied.")
 }else{
@@ -15,6 +21,7 @@ library(glmnet)
 library(tidyverse)
 
 # pi is the ratio between treatment groups
+# n_it <- 1000
 n_it <- 1000
 pi <- 0.5
 
@@ -23,6 +30,9 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   B <- create.B(10)
   Z <- create.Z(10, 3)
   sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, ratio=pi,
+                            trt.f = trt.f,
+                            link.f = link.f,
+                            cov.mat = sigma(p),
                             B = B, Z = Z)
   # Organize data by standardize
   train.dat <- sim.dat$train
@@ -38,8 +48,8 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   test.dat <- sim.dat$test
   test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
   
-  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
-  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+  #  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
+  #  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
   
   true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
     scale(test.dat$y.e.control, center = F, scale = attr(y.e, "scale"))
@@ -85,75 +95,84 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   
   susan.treat.diff <- (susan.treat.pred - susan.untreat.pred) %>% data.frame
   
+  data.frame(
+    run = x,
+    ext.mdl.MSE = rowSums((extm.mdl.trt.diff - true.trt.diff)^2) %>% mean,
+    RF.mdl.MSE = rowSums((RF.mdl.trt.diff - true.trt.diff)^2) %>% mean,
+    tree.mdl.MSE = rowSums((tree.mdl.trt.diff - true.trt.diff)^2) %>% mean,
+    susan.MSE = rowSums((susan.treat.diff - true.trt.diff)^2) %>% mean
+  )
   
 })
+
+saveRDS(sim.res, "res.rds")
 
 # Generating Rdata file for GUIDE
 # TODO: Need to work on this section
 # train.lab variable in this file is for the prediction purpose for Loh's method
-train.lab <- c(rep(1,n.train),rep(0, 2*n.test))
-Xs <- rbind(X.train.base, X.test.base, X.test.base)
-Ys <- rbind(Y.train.end, matrix(NA,nrow=2*n.test,ncol=ncol(Y.train.end)))
-Treat.all <- c(Treat.train,rep(1,n.test),rep(0,n.test))
-all.data <- cbind(train.lab, Treat.all, Xs, Ys)
-colnames(all.data) <- c("Train","Treated",paste0("X",1:p),paste0("Y",1:q))
+# train.lab <- c(rep(1,n.train),rep(0, 2*n.test))
+# Xs <- rbind(X.train.base, X.test.base, X.test.base)
+# Ys <- rbind(Y.train.end, matrix(NA,nrow=2*n.test,ncol=ncol(Y.train.end)))
+# Treat.all <- c(Treat.train,rep(1,n.test),rep(0,n.test))
+# all.data <- cbind(train.lab, Treat.all, Xs, Ys)
+# colnames(all.data) <- c("Train","Treated",paste0("X",1:p),paste0("Y",1:q))
 # Save data for Loh's method
-write.csv(all.data,paste0(args[1],"input_data.rdata"),row.names=F)
+# write.csv(all.data,paste0(args[1],"input_data.rdata"),row.names=F)
 
 
 ### Classification error
 #
 
 # each column is a weight vector
-weight <- rep(0.3,6)
+# weight <- rep(0.3,6)
 
-true.recom <- ifelse(Y.test.case.end%*%weight>Y.test.control.end%*%weight,1,0)
-exhaust.recom <- recommendResult(exhaust, X.test.base, weight)
-forest.recom <- recommendResult(forest, X.test.base, weight)
-susan.recom <- ifelse(susan.treat.pred[,,1]%*%weight > susan.untreat.pred[,,1]%*%weight,1,0)
-loh.recom <- ifelse(as.matrix(test.loh.treat.node.res[,5:10])%*%weight>as.matrix(test.loh.untreat.node.res[,5:10])%*%weight,1,0)
+# true.recom <- ifelse(Y.test.case.end%*%weight>Y.test.control.end%*%weight,1,0)
+# exhaust.recom <- recommendResult(exhaust, X.test.base, weight)
+# forest.recom <- recommendResult(forest, X.test.base, weight)
+# susan.recom <- ifelse(susan.treat.pred[,,1]%*%weight > susan.untreat.pred[,,1]%*%weight,1,0)
+# loh.recom <- ifelse(as.matrix(test.loh.treat.node.res[,5:10])%*%weight>as.matrix(test.loh.untreat.node.res[,5:10])%*%weight,1,0)
 
 # Classification error
-exhaust.err.tab <- table(exhaust.recom,true.recom)
-exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
-forest.err.tab <- table(forest.recom,true.recom)
-forest.err <- sum(forest.recom!=true.recom)/n.test
-susan.err.tab <- table(susan.recom,true.recom)
-susan.err <- sum(susan.recom!=true.recom)/n.test
-loh.err.tab <- table(loh.recom, true.recom)
-loh.err <- sum(loh.recom!=true.recom)/n.test
+# exhaust.err.tab <- table(exhaust.recom,true.recom)
+# exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
+# forest.err.tab <- table(forest.recom,true.recom)
+# forest.err <- sum(forest.recom!=true.recom)/n.test
+# susan.err.tab <- table(susan.recom,true.recom)
+# susan.err <- sum(susan.recom!=true.recom)/n.test
+# loh.err.tab <- table(loh.recom, true.recom)
+# loh.err <- sum(loh.recom!=true.recom)/n.test
 
-eweight.err <- #t(
-  c(exhaust.err, forest.err, susan.err, loh.err)
+# eweight.err <- #t(
+#   c(exhaust.err, forest.err, susan.err, loh.err)
 #)
 
-weight <- matrix(runif(n.test*q,-1,1),nrow=n.test)
+# weight <- matrix(runif(n.test*q,-1,1),nrow=n.test)
 
 
 # Each column represents the classification error of each methods corresponding to each weight
 
-  true.recom <- ifelse(diag(tcrossprod(Y.test.case.end,weight))>diag(tcrossprod(Y.test.control.end,weight)),1,0)
-  exhaust.recom <- recommendResult(exhaust, X.test.base, weight)
-  forest.recom <- recommendResult(forest, X.test.base, weight)
-  susan.recom <- ifelse(diag(tcrossprod(susan.treat.pred[,,1],weight)) > diag(tcrossprod(susan.untreat.pred[,,1],weight)),1,0)
-  loh.recom <- ifelse(diag(tcrossprod(as.matrix(test.loh.treat.node.res[,5:10]),weight))>diag(tcrossprod(as.matrix(test.loh.untreat.node.res[,5:10]),weight)),1,0)
+#  true.recom <- ifelse(diag(tcrossprod(Y.test.case.end,weight))>diag(tcrossprod(Y.test.control.end,weight)),1,0)
+#  exhaust.recom <- recommendResult(exhaust, X.test.base, weight)
+#  forest.recom <- recommendResult(forest, X.test.base, weight)
+#  susan.recom <- ifelse(diag(tcrossprod(susan.treat.pred[,,1],weight)) > diag(tcrossprod(susan.untreat.pred[,,1],weight)),1,0)
+#  loh.recom <- ifelse(diag(tcrossprod(as.matrix(test.loh.treat.node.res[,5:10]),weight))>diag(tcrossprod(as.matrix(test.loh.untreat.node.res[,5:10]),weight)),1,0)
 
-  # Classification error
-  exhaust.err.tab <- table(exhaust.recom,true.recom)
-  exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
-  forest.err.tab <- table(forest.recom,true.recom)
-  forest.err <- sum(forest.recom!=true.recom)/n.test
-  susan.err.tab <- table(susan.recom,true.recom)
-  susan.err <- sum(susan.recom!=true.recom)/n.test
-  loh.err.tab <- table(loh.recom, true.recom)
-  loh.err <- sum(loh.recom!=true.recom)/n.test
+# Classification error
+#  exhaust.err.tab <- table(exhaust.recom,true.recom)
+#  exhaust.err <- sum(exhaust.recom!=true.recom)/n.test
+#  forest.err.tab <- table(forest.recom,true.recom)
+#   forest.err <- sum(forest.recom!=true.recom)/n.test
+#   susan.err.tab <- table(susan.recom,true.recom)
+#   susan.err <- sum(susan.recom!=true.recom)/n.test
+#    loh.err.tab <- table(loh.recom, true.recom)
+#   loh.err <- sum(loh.recom!=true.recom)/n.test
 
 
-  rweight.err <- #t(
-    c(exhaust.err, forest.err, susan.err, loh.err)
-    #)
+#  rweight.err <- #t(
+#     c(exhaust.err, forest.err, susan.err, loh.err)
+#)
 
 #  return(write.out)
 # })
 
-err.output <-c(eweight.err, rweight.err)
+# err.output <-c(eweight.err, rweight.err)

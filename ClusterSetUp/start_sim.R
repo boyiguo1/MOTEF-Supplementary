@@ -5,7 +5,9 @@ sim_prmt <- expand.grid(
   q = c(3, 6),
   n_train = c(400, 800),
   n_test = c(1000),
-  sigma = c("ind", "AR")
+  sigma = c("ind", "AR"),
+  trt.f = c(1,2),
+  link.f = c(1,2)
 ) %>%
   data.frame()
 
@@ -21,12 +23,16 @@ start.sim <- function(
   p.name <- paste0("p", p)
   q.name <- paste0("q", q)
   sig.name <- paste0(sigma)
+  trt.f.name <- paste0("trt", ifelse(trt.f==1, "Lnr", "Poly"))
+  link.f.name <- paste0("lnk", ifelse(trt.f==1, "Lnr", "Poly"))
   
   job.name <- paste(p.name,
                     q.name,
                     ntrain.name,
                     ntest.name,
-                    sig.name, sep="_")
+                    sig.name,
+                    trt.f.name,
+                    link.f.name, sep="_")
   
   job.flag <- paste0("--job-name=",job.name)
   
@@ -38,7 +44,9 @@ start.sim <- function(
                      "ntest=", n_test, ",",
                      "p=", p, ",",
                      "q=", q, ",",
-                     "sigma=", sigma
+                     "sigma=", sigma,",",
+                     "trt", trt.f, ",",
+                     "lnk", link.f
   )
   
   system(

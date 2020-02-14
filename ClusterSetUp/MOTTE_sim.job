@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --share
+#SBATCH --partition=short
+#
+#
+# Set your error and output files
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=12
+#
+# Tell the scheduler only need 10 minutes
+#
+#SBATCH --time=10:00:00
+#SBATCH --mem-per-cpu=5000
+#
+# Set your email address and request notification when you job is complete or if it fails
+#
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=boyiguo1@uab.edu
+
+
+module load R/3.6.0-foss-2018a-X11-20180131-bare
+
+# module list
+
+tarPath=/home/boyiguo1/MOTTE/Res/$SLURM_JOB_NAME/
+
+
+ulimit -v 20000000
+
+
+mkdir -p $tarPath
+cd $tarPath
+
+R CMD BATCH  --vanilla "--args n.train=$ntrain n.test=$ntest p=$p q=$q sigma=$sigma trt.f=$trt link.f=$lnk" /home/boyiguo1/MOTTE/Code/Main.R
