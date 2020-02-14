@@ -53,8 +53,8 @@ where $f(\cdot)  = f_{T=1}(\cdot) = - f_{T=-1}(\cdot)$. This is the most simple 
         \beta = 
           \begin{pmatrix} 
             \mathbf{1}_{3\times 1} & \mathbf{0}_{3\times 1} & \mathbf{0}_{3\times 1} &\mathbf{0}_{3 \times (p-3)}\\
-            \mathbf{0}_{(p-3) \times 1} & \mathbf{1}_{3 \times 1} & \mathbf{0}_{3\times 1} & \mathbf{0}_{3 \times (p-3)}\\
-            \mathbf{0}_{(p-3) \times 1} & \mathbf{0}_{(p-3) \times 1} &\mathbf{1}_{3 \times 1} &\mathbf{0}_{3 \times (p-3)}\\
+            \mathbf{0}_{3 \times 1} & \mathbf{1}_{3 \times 1} & \mathbf{0}_{3\times 1} & \mathbf{0}_{3 \times (p-3)}\\
+            \mathbf{0}_{3 \times 1} & \mathbf{0}_{3 \times 1} &\mathbf{1}_{3 \times 1} &\mathbf{0}_{3 \times (p-3)}\\
             \mathbf{0}_{(p-9) \times 1} & \mathbf{0}_{(p-9) \times 1} & \mathbf{0}_{(p-9) \times 1} & \mathbf{0}_{(p-9) \times (p-3)}
           \end{pmatrix}
       \]
