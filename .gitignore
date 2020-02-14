@@ -2,6 +2,13 @@
 .Rhistory
 .RData
 .Ruserdata
+<<<<<<< HEAD
 *.pdf
 *.DS_Store
+=======
+Method_ToyExample.aux
+Method_ToyExample.nb.html
+Method_ToyExample.out
+Method_ToyExample.pdf
+>>>>>>> c0d102c9b003a87cc194f3eabc9982f04e6615e8
 Simulation-Plan.pdf
