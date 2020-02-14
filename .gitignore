@@ -2,6 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-Simulation-Plan.pdf
-
+*.pdf
 *.DS_Store
+Simulation-Plan.pdf
