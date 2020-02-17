@@ -9,13 +9,15 @@ sim_prmt <- expand.grid(
   trt.f = c(1,2),
   link.f = c(1,2)
 ) %>%
+  right_join(data.frame(p=c(10,20),q=c(3,6))) %>% 
   data.frame()
 
 # A wrapper function to set up each job
 start.sim <- function(
   p, q,
   n_train, n_test,
-  sigma
+  sigma,
+  trt.f, link.f
 ) {
   # names
   ntrain.name <- paste0("ntr", n_train)
