@@ -1,11 +1,22 @@
 # Receiving Simulation Setting Via Batch Arguments
 args=(commandArgs(TRUE))
 
+
+
+
 ind <- diag
 AR <- function(x){
   t <- 1:x
   return(0.8^abs(outer(t,t, "-")))
 }
+
+# p <- 10
+# q <- 3
+# n.train <- 400
+# n.test <- 1000
+# sigma <- ind
+# trt.f <- 1
+# link.f <- 1
 
 if(length(args)==0){
   print("No arguments supplied.")
@@ -22,16 +33,21 @@ library(tidyverse)
 
 # pi is the ratio between treatment groups
 # n_it <- 1000
-n_it <- 1000
+n_it <- 100
 pi <- 0.5
+
+
+
+
+
 
 sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   
   paste0("This is Run", x, "\n") %>% cat
   
   set.seed(x)
-  B <- create.B(10)
-  Z <- create.Z(10, 3)
+  B <- create.B(p)
+  Z <- create.Z(p, q)
   sim.dat <- sim_MOTTE_data(n.train=n.train, n.test=n.test, p=p, q=q, ratio=pi,
                             trt.f = c("Linear", "Polynomial")[trt.f],
                             link.f = c("Linear", "Polynomial")[link.f],
