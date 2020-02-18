@@ -95,15 +95,15 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   # Constructing data with interaction term
   dat <- data.frame( x = x.b, Treat = treat)
   f <- as.formula(~(.-Treat)*Treat)
-  x <- model.matrix(f, dat)
+  susan.x <- model.matrix(f, dat)
   
-  cv.res <- cv.glmnet(x, y.e,family="mgaussian", standardize=T, intercept=T)
-  glm.res <- glmnet(x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
+  cv.res <- cv.glmnet(susan.x, y.e,family="mgaussian", standardize=T, intercept=T)
+  glm.res <- glmnet(susan.x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
   
   # TODO change the name
-  test.treat <- data.frame(x=test.x.b,
+  test.treat <- data.frame(susan.x=test.x.b,
                            Treat=rep(levels(treat)[1],n.test) %>% factor(levels = levels(treat)))
-  test.untreat <- data.frame(x=test.x.b,
+  test.untreat <- data.frame(susan.x=test.x.b,
                              Treat=rep(levels(treat)[2],n.test) %>% factor(levels = levels(treat)))
   
   x.test.treat <- model.matrix(f, test.treat)
