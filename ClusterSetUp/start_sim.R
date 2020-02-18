@@ -26,7 +26,7 @@ start.sim <- function(
   q.name <- paste0("q", q)
   sig.name <- paste0(sigma)
   trt.f.name <- paste0("trt", ifelse(trt.f==1, "Lnr", "Poly"))
-  link.f.name <- paste0("lnk", ifelse(trt.f==1, "Lnr", "Poly"))
+  link.f.name <- paste0("lnk", ifelse(link.f==1, "Lnr", "Poly"))
   
   job.name <- paste(p.name,
                     q.name,
@@ -47,8 +47,8 @@ start.sim <- function(
                      "p=", p, ",",
                      "q=", q, ",",
                      "sigma=", sigma,",",
-                     "trt", trt.f, ",",
-                     "lnk", link.f
+                     "trt=", trt.f, ",",
+                     "lnk=", link.f
   )
   
   system(
@@ -57,7 +57,7 @@ start.sim <- function(
 }
 
 
-for(i in 1:NROW(sim_prmt)){
-  #  i <- 1
+# for(i in 1:NROW(sim_prmt)){
+  i <- 1
   do.call(start.sim, sim_prmt[i,])
-}
+# }
