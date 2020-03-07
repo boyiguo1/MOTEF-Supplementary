@@ -1,0 +1,10 @@
+---
+title: "Method Use Explain"
+output: html_notebook
+---
+
+L1 penalized:
+- Scale X.b by standard deviation, no change to y.e
+- fit model and tune model by cv
+- use the model to predict predicted
+- calculate treatment difference
