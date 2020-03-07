@@ -10,13 +10,13 @@ AR <- function(x){
   return(0.8^abs(outer(t,t, "-")))
 }
 
-# p <- 10
-# q <- 3
-# n.train <- 400
-# n.test <- 1000
-# sigma <- ind
-# trt.f <- 1
-# link.f <- 1
+p <- 10
+q <- 3
+n.train <- 400
+n.test <- 1000
+sigma <- ind
+trt.f <- 1
+link.f <- 1
 
 if(length(args)==0){
   print("No arguments supplied.")
@@ -33,7 +33,7 @@ library(tidyverse)
 
 # pi is the ratio between treatment groups
 # n_it <- 1000
-n_it <- 100
+n_it <- 10
 pi <- 0.5
 
 
@@ -60,6 +60,7 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   x.e <- scale(train.dat$x.e, center = FALSE, scale = TRUE)
   y.b <- scale(train.dat$y.b, center = FALSE, scale = TRUE)
   y.e <- scale(train.dat$y.e, center = FALSE, scale = TRUE)
+  y.e.original <- train.dat$y.e
   treat <- train.dat$trt
   
   
@@ -70,23 +71,26 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   #  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
   #  test.x.b <- scale(test.dat$x.b, center = F, scale = attr(x.b, "scale"))
   
-  true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
-    scale(test.dat$y.e.control, center = F, scale = attr(y.e, "scale"))
+  # true.trt.diff <- scale(test.dat$y.e.case, center = F, scale = attr(y.e, "scale")) -
+  #   scale(test.dat$y.e.control, center = F, scale = attr(y.e, "scale"))
+  
+  true.trt.diff <- test.dat$y.e.case - test.dat$y.e.control
   
   # Fit Extreme RF
   extm.mdl<- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
                                 nsplits = 1)
-  extm.mdl.trt.diff <- calcTrtDiff(extm.mdl, test.x.b)
+  trt.diff.nonScaled <- calcTrtDiff(extm.mdl, test.x.b) 
+  extm.mdl.trt.diff <- trt.diff.nonScaled * attr(y.e, "scale")
   
   # Fit RF based on \mu X.b
-  RF.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
-                               nsplits = 50)
-  RF.mdl.trt.diff <- calcTrtDiff(RF.mdl, test.x.b)
+  # RF.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+  #                              nsplits = 50)
+  # RF.mdl.trt.diff <- calcTrtDiff(RF.mdl, test.x.b)
   
   # Fit Tree based on \mu X.b
-  tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
-                                 nsplits = NULL)
-  tree.mdl.trt.diff <- calcTrtDiff(tree.mdl, test.x.b)
+  # tree.mdl <- build_MOTTE_forest(x.b, x.e, treat, y.b, y.e,
+  #                                nsplits = NULL)
+  # tree.mdl.trt.diff <- calcTrtDiff(tree.mdl, test.x.b)
   
   
   #calcTrtDiff.single(tree.mdl, test.x.b[1,,drop=F])
@@ -97,8 +101,8 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   f <- as.formula(~(.-Treat)*Treat)
   susan.x <- model.matrix(f, dat)
   
-  cv.res <- cv.glmnet(susan.x, y.e,family="mgaussian", standardize=T, intercept=T)
-  glm.res <- glmnet(susan.x,y.e,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
+  cv.res <- cv.glmnet(susan.x, y.e.original,family="mgaussian", standardize=T, intercept=T)
+  glm.res <- glmnet(susan.x, y.e.original,family="mgaussian", lambda = cv.res$lambda.min, intercept=T)
   
   # TODO change the name
   test.treat <- data.frame(susan.x=test.x.b,
@@ -117,9 +121,11 @@ sim.res <- purrr::map_dfr(1:n_it, .f=function(x){
   data.frame(
     run = x,
     ext.mdl.MSE = rowSums((extm.mdl.trt.diff - true.trt.diff)^2) %>% mean,
-    RF.mdl.MSE = rowSums((RF.mdl.trt.diff - true.trt.diff)^2) %>% mean,
-    tree.mdl.MSE = rowSums((tree.mdl.trt.diff - true.trt.diff)^2) %>% mean,
-    susan.MSE = rowSums((susan.treat.diff - true.trt.diff)^2) %>% mean
+    ext.mdl.MSE.sd = rowSums((extm.mdl.trt.diff - true.trt.diff)^2) %>% sd,
+    # RF.mdl.MSE = rowSums((RF.mdl.trt.diff - true.trt.diff)^2) %>% mean,
+    # tree.mdl.MSE = rowSums((tree.mdl.trt.diff - true.trt.diff)^2) %>% mean,
+    susan.MSE = rowSums((susan.treat.diff - true.trt.diff)^2) %>% mean,
+    susan.MSE.sd = rowSums((susan.treat.diff - true.trt.diff)^2) %>% sd
   )
   
 })
