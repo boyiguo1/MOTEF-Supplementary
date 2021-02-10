@@ -1,0 +1,5 @@
+rm *.Rout
+rm -r /data/user/boyiguo1/MOTE/Res/*
+rm -r /data/user/boyiguo1/MOTE/log/*
+rm *.out
+rm *.err
